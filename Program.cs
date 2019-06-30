@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Open_Rails_Code_Bot.GitHub;
 
 namespace Open_Rails_Code_Bot
 {
@@ -11,7 +12,7 @@ namespace Open_Rails_Code_Bot
 		{
 			var config = new CommandLineParser.Arguments.FileArgument('c', "config")
 			{
-				DefaultValue = new FileInfo("config.json")
+				ForcedDefaultValue = new FileInfo("config.json")
 			};
 
 			var commandLineParser = new CommandLineParser.CommandLineParser()
@@ -37,7 +38,14 @@ namespace Open_Rails_Code_Bot
 
 		static async Task AsyncMain(IConfigurationRoot config)
 		{
-			// TODO:
+			var gitHubConfig = config.GetSection("github");
+			var query = new Query(gitHubConfig["token"]);
+
+			var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
+			Console.WriteLine($"Org '{gitHubConfig["organization"]}' team '{gitHubConfig["team"]}' members");
+			foreach (var member in members) {
+				Console.WriteLine($"  {member.Login}");
+			}
 		}
 	}
 }
