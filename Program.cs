@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Open_Rails_Code_Bot.GitHub;
@@ -43,8 +44,19 @@ namespace Open_Rails_Code_Bot
 
 			var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
 			Console.WriteLine($"Org '{gitHubConfig["organization"]}' team '{gitHubConfig["team"]}' members");
-			foreach (var member in members) {
+			foreach (var member in members)
+			{
 				Console.WriteLine($"  {member.Login}");
+			}
+
+			var pullRequests = await query.GetOpenPullRequests(gitHubConfig["organization"], gitHubConfig["repository"]);
+			Console.WriteLine($"Org '{gitHubConfig["organization"]}' repo '{gitHubConfig["repository"]}' open pull requests");
+			foreach (var pullRequest in pullRequests)
+			{
+				Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
+				Console.WriteLine($"    By:     {pullRequest.Author.Login}");
+				Console.WriteLine($"    Branch: {pullRequest.HeadRef.Name}");
+				Console.WriteLine($"    Labels: {String.Join(' ', pullRequest.Labels.Nodes.Select(label => label.Name))}");
 			}
 		}
 	}

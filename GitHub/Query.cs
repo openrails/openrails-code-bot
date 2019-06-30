@@ -35,7 +35,7 @@ namespace Open_Rails_Code_Bot.GitHub
 			return JObject.Parse(text);
 		}
 
-		public async Task<IReadOnlyList<GraphOrganizationTeamMember>> GetTeamMembers(string organization, string team)
+		public async Task<IReadOnlyList<GraphTeamMember>> GetTeamMembers(string organization, string team)
 		{
 			var query = @"
 				organization(login: """ + organization + @""") {
@@ -51,7 +51,40 @@ namespace Open_Rails_Code_Bot.GitHub
 				}
 			";
 			var response = await Get(query);
-			return response["data"]["organization"]["team"]["members"]["nodes"].ToObject<GraphOrganizationTeamMember[]>();
+			return response["data"]["organization"]["team"]["members"]["nodes"].ToObject<GraphTeamMember[]>();
+		}
+
+		public async Task<IReadOnlyList<GraphPullRequest>> GetOpenPullRequests(string organization, string repository)
+		{
+			var query = @"
+				organization(login: """ + organization + @""") {
+					repository(name: """ + repository + @""") {
+						pullRequests(states: OPEN, first: 100, orderBy: {field: CREATED_AT, direction: ASC}) {
+							nodes {
+								url
+								number
+								title
+								createdAt
+								author {
+									url
+									login
+								}
+								headRef {
+									prefix
+									name
+								}
+								labels(first: 100) {
+									nodes {
+										name
+									}
+								}
+							}
+						}
+					}
+				}
+			";
+			var response = await Get(query);
+			return response["data"]["organization"]["repository"]["pullRequests"]["nodes"].ToObject<GraphPullRequest[]>();
 		}
 	}
 }

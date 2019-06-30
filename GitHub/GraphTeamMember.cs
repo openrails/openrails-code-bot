@@ -2,7 +2,7 @@ using System;
 
 namespace Open_Rails_Code_Bot.GitHub
 {
-	class GraphOrganizationTeamMember
+	class GraphTeamMember
 	{
 		public Uri Url;
 		public string Login;
