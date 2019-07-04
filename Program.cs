@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,20 +44,35 @@ namespace Open_Rails_Code_Bot
 			var query = new Query(gitHubConfig["token"]);
 
 			var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
-			Console.WriteLine($"Org '{gitHubConfig["organization"]}' team '{gitHubConfig["team"]}' members");
+			Console.WriteLine($"Org '{gitHubConfig["organization"]}' team '{gitHubConfig["team"]}' members ({members.Count})");
 			foreach (var member in members)
 			{
 				Console.WriteLine($"  {member.Login}");
 			}
+			var memberLogins = members.Select(member => member.Login).ToHashSet();
 
 			var pullRequests = await query.GetOpenPullRequests(gitHubConfig["organization"], gitHubConfig["repository"]);
-			Console.WriteLine($"Org '{gitHubConfig["organization"]}' repo '{gitHubConfig["repository"]}' open pull requests");
+			var autoMergePullRequests = new List<GraphPullRequest>();
+			Console.WriteLine($"Org '{gitHubConfig["organization"]}' repo '{gitHubConfig["repository"]}' open pull requests ({pullRequests.Count})");
 			foreach (var pullRequest in pullRequests)
 			{
+				var autoMerge = memberLogins.Contains(pullRequest.Author.Login)
+					&& !pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["excludeLabel"]);
 				Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
 				Console.WriteLine($"    By:     {pullRequest.Author.Login}");
 				Console.WriteLine($"    Branch: {pullRequest.HeadRef.Name}");
 				Console.WriteLine($"    Labels: {String.Join(' ', pullRequest.Labels.Nodes.Select(label => label.Name))}");
+				Console.WriteLine($"    Allowed to auto-merge? {autoMerge}");
+				if (autoMerge)
+				{
+					autoMergePullRequests.Add(pullRequest);
+				}
+			}
+
+			Console.WriteLine($"Org '{gitHubConfig["organization"]}' repo '{gitHubConfig["repository"]}' auto-merge pull requests ({autoMergePullRequests.Count})");
+			foreach (var pullRequest in autoMergePullRequests)
+			{
+				Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
 			}
 		}
 	}
