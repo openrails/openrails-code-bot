@@ -8,83 +8,83 @@ using Newtonsoft.Json.Linq;
 
 namespace Open_Rails_Code_Bot.GitHub
 {
-	class Query
-	{
-		const string Endpoint = "https://api.github.com/graphql";
+    class Query
+    {
+        const string Endpoint = "https://api.github.com/graphql";
 
-		readonly string Token;
+        readonly string Token;
 
-		HttpClient Client = new HttpClient();
+        HttpClient Client = new HttpClient();
 
-		public Query(string token)
-		{
-			Token = token;
-		}
+        public Query(string token)
+        {
+            Token = token;
+        }
 
-		internal async Task<JObject> Get(string query)
-		{
-			var request = new HttpRequestMessage(HttpMethod.Post, Endpoint);
-			request.Headers.UserAgent.Clear();
-			request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Open-Rails-Code-Bot", "1.0"));
-			request.Headers.Authorization = new AuthenticationHeaderValue("bearer", Token);
-			var graphQuery = new GraphQuery { Query = $"query {{ {query} }}" };
-			var graphQueryJson = JsonConvert.SerializeObject(graphQuery);
-			request.Content = new StringContent(graphQueryJson, Encoding.UTF8, "application/json");
-			var response = await Client.SendAsync(request);
-			var text = await response.Content.ReadAsStringAsync();
-			return JObject.Parse(text);
-		}
+        internal async Task<JObject> Get(string query)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, Endpoint);
+            request.Headers.UserAgent.Clear();
+            request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Open-Rails-Code-Bot", "1.0"));
+            request.Headers.Authorization = new AuthenticationHeaderValue("bearer", Token);
+            var graphQuery = new GraphQuery { Query = $"query {{ {query} }}" };
+            var graphQueryJson = JsonConvert.SerializeObject(graphQuery);
+            request.Content = new StringContent(graphQueryJson, Encoding.UTF8, "application/json");
+            var response = await Client.SendAsync(request);
+            var text = await response.Content.ReadAsStringAsync();
+            return JObject.Parse(text);
+        }
 
-		public async Task<IReadOnlyList<GraphTeamMember>> GetTeamMembers(string organization, string team)
-		{
-			var query = @"
-				organization(login: """ + organization + @""") {
-					team(slug: """ + team + @""") {
-						members {
-							nodes {
-								url
-								login
-								name
-							}
-						}
-					}
-				}
-			";
-			var response = await Get(query);
-			return response["data"]["organization"]["team"]["members"]["nodes"].ToObject<GraphTeamMember[]>();
-		}
+        public async Task<IReadOnlyList<GraphTeamMember>> GetTeamMembers(string organization, string team)
+        {
+            var query = @"
+                organization(login: """ + organization + @""") {
+                    team(slug: """ + team + @""") {
+                        members {
+                            nodes {
+                                url
+                                login
+                                name
+                            }
+                        }
+                    }
+                }
+            ";
+            var response = await Get(query);
+            return response["data"]["organization"]["team"]["members"]["nodes"].ToObject<GraphTeamMember[]>();
+        }
 
-		public async Task<IReadOnlyList<GraphPullRequest>> GetOpenPullRequests(string organization, string repository)
-		{
-			var query = @"
-				organization(login: """ + organization + @""") {
-					repository(name: """ + repository + @""") {
-						pullRequests(states: OPEN, first: 100, orderBy: {field: CREATED_AT, direction: ASC}) {
-							nodes {
-								url
-								number
-								title
-								createdAt
-								author {
-									url
-									login
-								}
-								headRef {
-									prefix
-									name
-								}
-								labels(first: 100) {
-									nodes {
-										name
-									}
-								}
-							}
-						}
-					}
-				}
-			";
-			var response = await Get(query);
-			return response["data"]["organization"]["repository"]["pullRequests"]["nodes"].ToObject<GraphPullRequest[]>();
-		}
-	}
+        public async Task<IReadOnlyList<GraphPullRequest>> GetOpenPullRequests(string organization, string repository)
+        {
+            var query = @"
+                organization(login: """ + organization + @""") {
+                    repository(name: """ + repository + @""") {
+                        pullRequests(states: OPEN, first: 100, orderBy: {field: CREATED_AT, direction: ASC}) {
+                            nodes {
+                                url
+                                number
+                                title
+                                createdAt
+                                author {
+                                    url
+                                    login
+                                }
+                                headRef {
+                                    prefix
+                                    name
+                                }
+                                labels(first: 100) {
+                                    nodes {
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ";
+            var response = await Get(query);
+            return response["data"]["organization"]["repository"]["pullRequests"]["nodes"].ToObject<GraphPullRequest[]>();
+        }
+    }
 }
