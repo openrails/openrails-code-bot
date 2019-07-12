@@ -47,7 +47,7 @@ namespace Open_Rails_Code_Bot
             Console.WriteLine($"GitHub team:         {gitHubConfig["team"]}");
             Console.WriteLine($"GitHub repository:   {gitHubConfig["repository"]}");
             Console.WriteLine($"GitHub base branch:  {gitHubConfig["baseBranch"]}");
-            Console.WriteLine($"GitHub merge branch:  {gitHubConfig["mergeBranch"]}");
+            Console.WriteLine($"GitHub merge branch: {gitHubConfig["mergeBranch"]}");
 
             var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
             Console.WriteLine($"Team members ({members.Count}):");
