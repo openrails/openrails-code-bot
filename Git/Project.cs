@@ -52,12 +52,20 @@ namespace Open_Rails_Code_Bot.Git
 
         public string CommitTree(string treeRef, IEnumerable<string> parentRefs, string message)
         {
-            var parents = String.Join(" ", parentRefs.Select(parentRef => $"-p {parentRef}"));
-            foreach (var line in GetCommandOutput($"commit-tree {treeRef} {parents} -m {message}"))
-            {
-                return line;
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, message);
+            try {
+                var parents = String.Join(" ", parentRefs.Select(parentRef => $"-p {parentRef}"));
+                foreach (var line in GetCommandOutput($"commit-tree {treeRef} {parents} -F {tempFile}"))
+                {
+                    return line;
+                }
+                throw new ApplicationException("Unable to describe commit");
             }
-            throw new ApplicationException("Unable to describe commit");
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
 
         public void CheckoutDetached(string reference)

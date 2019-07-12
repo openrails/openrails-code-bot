@@ -110,7 +110,12 @@ namespace Open_Rails_Code_Bot
                 }
             }
             var mergedCommit = git.ParseRef("HEAD");
-            var newMergeBranchCommit = git.CommitTree($"{mergedCommit}^{{tree}}", mergeBranchParents, "Auto-merge");
+            var mergedMessage = String.Format(gitHubConfig["mergeMessageFormat"],
+                baseBranchVersion,
+                autoMergePullRequestsSuccess.Count,
+                String.Join("", autoMergePullRequestsSuccess.Select(pr => String.Format(gitHubConfig["mergeMessagePRFormat"], pr.Number, pr.Title)))
+            );
+            var newMergeBranchCommit = git.CommitTree($"{mergedCommit}^{{tree}}", mergeBranchParents, mergedMessage);
             git.SetBranchRef(gitHubConfig["branch"], newMergeBranchCommit);
             Console.WriteLine($"Base branch commit: {baseBranchCommit}");
             Console.WriteLine($"Base branch version: {baseBranchVersion}");
