@@ -68,6 +68,23 @@ namespace Open_Rails_Code_Bot.Git
             }
         }
 
+        public DateTimeOffset GetCommitDate(string reference)
+        {
+            foreach (var line in GetCommandOutput($"cat-file -p {reference}"))
+            {
+                if (line.StartsWith("author "))
+                {
+                    return DateTimeOffset.FromUnixTimeSeconds(long.Parse(line.Split("> ")[1].Split(" ")[0]));
+                }
+            }
+            throw new ApplicationException("Unable to describe commit");
+        }
+
+        public void Checkout(string reference)
+        {
+            RunCommand($"checkout --quiet {reference}");
+        }
+
         public void CheckoutDetached(string reference)
         {
             RunCommand($"checkout --quiet --detach {reference}");

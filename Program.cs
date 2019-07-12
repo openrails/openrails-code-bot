@@ -47,7 +47,7 @@ namespace Open_Rails_Code_Bot
             Console.WriteLine($"GitHub team:         {gitHubConfig["team"]}");
             Console.WriteLine($"GitHub repository:   {gitHubConfig["repository"]}");
             Console.WriteLine($"GitHub base branch:  {gitHubConfig["baseBranch"]}");
-            Console.WriteLine($"GitHub new branch:   {gitHubConfig["branch"]}");
+            Console.WriteLine($"GitHub merge branch:  {gitHubConfig["mergeBranch"]}");
 
             var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
             Console.WriteLine($"Team members ({members.Count}):");
@@ -86,12 +86,13 @@ namespace Open_Rails_Code_Bot
             git.Fetch();
             git.ResetHard();
             var baseBranchCommit = git.ParseRef(gitHubConfig["baseBranch"]);
-            var mergeBranchCommit = git.ParseRef(gitHubConfig["branch"]);
+            var mergeBranchCommit = git.ParseRef(gitHubConfig["mergeBranch"]);
+            var mergeBranchTree = git.ParseRef($"{mergeBranchCommit}^{{tree}}");
             git.CheckoutDetached(baseBranchCommit);
             var baseBranchVersion = String.Format(gitHubConfig["versionFormat"] ?? "{0}", git.Describe(gitHubConfig["versionDescribeOptions"] ?? ""));
             var mergeBranchParents = new List<string>();
-            mergeBranchParents.Add(baseBranchCommit);
             mergeBranchParents.Add(mergeBranchCommit);
+            mergeBranchParents.Add(baseBranchCommit);
             var autoMergePullRequestsSuccess = new List<GraphPullRequest>();
             var autoMergePullRequestsFailure = new List<GraphPullRequest>();
             foreach (var pullRequest in autoMergePullRequests)
@@ -109,17 +110,8 @@ namespace Open_Rails_Code_Bot
                     git.ResetHard();
                 }
             }
-            var mergedCommit = git.ParseRef("HEAD");
-            var mergedMessage = String.Format(gitHubConfig["mergeMessageFormat"],
-                baseBranchVersion,
-                autoMergePullRequestsSuccess.Count,
-                String.Join("", autoMergePullRequestsSuccess.Select(pr => String.Format(gitHubConfig["mergeMessagePRFormat"], pr.Number, pr.Title)))
-            );
-            var newMergeBranchCommit = git.CommitTree($"{mergedCommit}^{{tree}}", mergeBranchParents, mergedMessage);
-            git.SetBranchRef(gitHubConfig["branch"], newMergeBranchCommit);
-            Console.WriteLine($"Base branch commit: {baseBranchCommit}");
-            Console.WriteLine($"Base branch version: {baseBranchVersion}");
-            Console.WriteLine($"Merge branch commit: {newMergeBranchCommit}");
+            var autoMergeCommit = git.ParseRef("HEAD");
+            var autoMergeTree = git.ParseRef($"{autoMergeCommit}^{{tree}}");
 
             Console.WriteLine($"Pull requests successfully auto-merged ({autoMergePullRequestsSuccess.Count}):");
             foreach (var pullRequest in autoMergePullRequestsSuccess)
@@ -131,6 +123,30 @@ namespace Open_Rails_Code_Bot
             foreach (var pullRequest in autoMergePullRequestsFailure)
             {
                 Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
+            }
+
+            if (mergeBranchTree == autoMergeTree)
+            {
+                Console.WriteLine("No changes to push into merge branch");
+            }
+            else
+            {
+                var newMergeBranchMessage = String.Format(gitHubConfig["mergeMessageFormat"],
+                    baseBranchVersion,
+                    autoMergePullRequestsSuccess.Count,
+                    String.Join("", autoMergePullRequestsSuccess.Select(pr => String.Format(gitHubConfig["mergeMessagePRFormat"], pr.Number, pr.Title)))
+                );
+                var newMergeBranchCommit = git.CommitTree($"{autoMergeCommit}^{{tree}}", mergeBranchParents, newMergeBranchMessage);
+                git.SetBranchRef(gitHubConfig["mergeBranch"], newMergeBranchCommit);
+                git.Checkout(gitHubConfig["mergeBranch"]);
+                var newMergeBranchVersion = String.Format(
+                    gitHubConfig["mergeVersionFormat"] ?? gitHubConfig["versionFormat"] ?? "{0}",
+                    git.Describe(gitHubConfig["mergeVersionDescribeOptions"] ?? gitHubConfig["versionDescribeOptions"] ?? ""),
+                    git.GetCommitDate(newMergeBranchCommit)
+                );
+                Console.WriteLine("Pushed changes into merge branch:");
+                Console.WriteLine($"  Version: {newMergeBranchVersion}");
+                Console.WriteLine($"  Message: {newMergeBranchMessage.Split("\n")[0]}");
             }
         }
 
