@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Open_Rails_Code_Bot.Git
@@ -40,6 +41,25 @@ namespace Open_Rails_Code_Bot.Git
             throw new ApplicationException("Unable to find ref");
         }
 
+        public string Describe(string options)
+        {
+            foreach (var line in GetCommandOutput($"describe {options}"))
+            {
+                return line;
+            }
+            throw new ApplicationException("Unable to describe commit");
+        }
+
+        public string CommitTree(string treeRef, IEnumerable<string> parentRefs, string message)
+        {
+            var parents = String.Join(" ", parentRefs.Select(parentRef => $"-p {parentRef}"));
+            foreach (var line in GetCommandOutput($"commit-tree {treeRef} {parents} -m {message}"))
+            {
+                return line;
+            }
+            throw new ApplicationException("Unable to describe commit");
+        }
+
         public void CheckoutDetached(string reference)
         {
             RunCommand($"checkout --quiet --detach {reference}");
@@ -53,6 +73,11 @@ namespace Open_Rails_Code_Bot.Git
         public void Merge(string reference)
         {
             RunCommand($"merge --no-edit --no-ff {reference}");
+        }
+
+        public void SetBranchRef(string branch, string reference)
+        {
+            RunCommand($"branch -f {branch} {reference}");
         }
 
         void RunCommand(string command)

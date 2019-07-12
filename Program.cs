@@ -46,6 +46,8 @@ namespace Open_Rails_Code_Bot
             Console.WriteLine($"GitHub organisation: {gitHubConfig["organization"]}");
             Console.WriteLine($"GitHub team:         {gitHubConfig["team"]}");
             Console.WriteLine($"GitHub repository:   {gitHubConfig["repository"]}");
+            Console.WriteLine($"GitHub base branch:  {gitHubConfig["baseBranch"]}");
+            Console.WriteLine($"GitHub new branch:   {gitHubConfig["branch"]}");
 
             var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
             Console.WriteLine($"Team members ({members.Count}):");
@@ -83,8 +85,13 @@ namespace Open_Rails_Code_Bot
             git.Init($"https://github.com/{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
             git.Fetch();
             git.ResetHard();
-            var baseCommit = git.ParseRef("master");
-            git.CheckoutDetached(baseCommit);
+            var baseBranchCommit = git.ParseRef(gitHubConfig["baseBranch"]);
+            var mergeBranchCommit = git.ParseRef(gitHubConfig["branch"]);
+            git.CheckoutDetached(baseBranchCommit);
+            var baseBranchVersion = String.Format(gitHubConfig["versionFormat"] ?? "{0}", git.Describe(gitHubConfig["versionDescribeOptions"] ?? ""));
+            var mergeBranchParents = new List<string>();
+            mergeBranchParents.Add(baseBranchCommit);
+            mergeBranchParents.Add(mergeBranchCommit);
             var autoMergePullRequestsSuccess = new List<GraphPullRequest>();
             var autoMergePullRequestsFailure = new List<GraphPullRequest>();
             foreach (var pullRequest in autoMergePullRequests)
@@ -93,6 +100,7 @@ namespace Open_Rails_Code_Bot
                 try
                 {
                     git.Merge(mergeCommit);
+                    mergeBranchParents.Add(mergeCommit);
                     autoMergePullRequestsSuccess.Add(pullRequest);
                 }
                 catch (ApplicationException)
@@ -101,7 +109,12 @@ namespace Open_Rails_Code_Bot
                     git.ResetHard();
                 }
             }
-            Console.WriteLine($"Final commit: {git.ParseRef("HEAD")}");
+            var mergedCommit = git.ParseRef("HEAD");
+            var newMergeBranchCommit = git.CommitTree($"{mergedCommit}^{{tree}}", mergeBranchParents, "Auto-merge");
+            git.SetBranchRef(gitHubConfig["branch"], newMergeBranchCommit);
+            Console.WriteLine($"Base branch commit: {baseBranchCommit}");
+            Console.WriteLine($"Base branch version: {baseBranchVersion}");
+            Console.WriteLine($"Merge branch commit: {newMergeBranchCommit}");
 
             Console.WriteLine($"Pull requests successfully auto-merged ({autoMergePullRequestsSuccess.Count}):");
             foreach (var pullRequest in autoMergePullRequestsSuccess)
