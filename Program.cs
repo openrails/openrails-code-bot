@@ -134,7 +134,12 @@ namespace Open_Rails_Code_Bot
                 var newMergeBranchMessage = String.Format(gitHubConfig["mergeMessageFormat"],
                     baseBranchVersion,
                     autoMergePullRequestsSuccess.Count,
-                    String.Join("", autoMergePullRequestsSuccess.Select(pr => String.Format(gitHubConfig["mergeMessagePRFormat"], pr.Number, pr.Title)))
+                    String.Join("", autoMergePullRequestsSuccess.Select(pr => String.Format(
+                        gitHubConfig["mergeMessagePRFormat"],
+                        pr.Number,
+                        pr.Title,
+                        git.GetAbbreviatedCommit($"pull/{pr.Number}/head")
+                    )))
                 );
                 var newMergeBranchCommit = git.CommitTree($"{autoMergeCommit}^{{tree}}", mergeBranchParents, newMergeBranchMessage);
                 git.SetBranchRef(gitHubConfig["mergeBranch"], newMergeBranchCommit);

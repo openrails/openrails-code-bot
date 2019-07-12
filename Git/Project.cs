@@ -41,6 +41,15 @@ namespace Open_Rails_Code_Bot.Git
             throw new ApplicationException("Unable to find ref");
         }
 
+        public string GetAbbreviatedCommit(string reference)
+        {
+            foreach (var line in GetCommandOutput($"log --format=%h -1 {reference}"))
+            {
+                return line;
+            }
+            throw new ApplicationException("Unable to find ref");
+        }
+
         public string Describe(string options)
         {
             foreach (var line in GetCommandOutput($"describe {options}"))
