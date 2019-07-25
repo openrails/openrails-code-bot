@@ -128,6 +128,7 @@ namespace Open_Rails_Code_Bot
             if (mergeBranchTree == autoMergeTree)
             {
                 Console.WriteLine("No changes to push into merge branch");
+                git.Checkout(gitHubConfig["mergeBranch"]);
             }
             else
             {

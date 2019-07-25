@@ -23,7 +23,9 @@ namespace Open_Rails_Code_Bot.Git
             if (!Directory.Exists(GitPath))
             {
                 Directory.CreateDirectory(GitPath);
-                RunCommand($"clone --mirror {repository} .");
+                RunCommand($"init");
+                RunCommand($"remote add origin {repository}");
+                RunCommand($"config remote.origin.fetch +refs/*:refs/*");
             }
         }
 
