@@ -150,6 +150,7 @@ namespace Open_Rails_Code_Bot
                     git.Describe(gitHubConfig["mergeVersionDescribeOptions"] ?? gitHubConfig["versionDescribeOptions"] ?? ""),
                     git.GetCommitDate(newMergeBranchCommit)
                 );
+                git.Push(gitHubConfig["mergeBranch"]);
                 Console.WriteLine("Pushed changes into merge branch:");
                 Console.WriteLine($"  Version: {newMergeBranchVersion}");
                 Console.WriteLine($"  Message: {newMergeBranchMessage.Split("\n")[0]}");
