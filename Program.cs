@@ -43,8 +43,14 @@ namespace Open_Rails_Code_Bot
             var gitHubConfig = config.GetSection("github");
             var query = new Query(gitHubConfig["token"]);
 
+            Console.WriteLine($"GitHub organisation: {gitHubConfig["organization"]}");
+            Console.WriteLine($"GitHub team:         {gitHubConfig["team"]}");
+            Console.WriteLine($"GitHub repository:   {gitHubConfig["repository"]}");
+            Console.WriteLine($"GitHub base branch:  {gitHubConfig["baseBranch"]}");
+            Console.WriteLine($"GitHub merge branch: {gitHubConfig["mergeBranch"]}");
+
             var members = await query.GetTeamMembers(gitHubConfig["organization"], gitHubConfig["team"]);
-            Console.WriteLine($"Org '{gitHubConfig["organization"]}' team '{gitHubConfig["team"]}' members ({members.Count})");
+            Console.WriteLine($"Team members ({members.Count}):");
             foreach (var member in members)
             {
                 Console.WriteLine($"  {member.Login}");
@@ -53,7 +59,7 @@ namespace Open_Rails_Code_Bot
 
             var pullRequests = await query.GetOpenPullRequests(gitHubConfig["organization"], gitHubConfig["repository"]);
             var autoMergePullRequests = new List<GraphPullRequest>();
-            Console.WriteLine($"Org '{gitHubConfig["organization"]}' repo '{gitHubConfig["repository"]}' open pull requests ({pullRequests.Count})");
+            Console.WriteLine($"Open pull requests ({pullRequests.Count}):");
             foreach (var pullRequest in pullRequests)
             {
                 var autoMerge = memberLogins.Contains(pullRequest.Author.Login)
@@ -69,11 +75,90 @@ namespace Open_Rails_Code_Bot
                 }
             }
 
-            Console.WriteLine($"Org '{gitHubConfig["organization"]}' repo '{gitHubConfig["repository"]}' auto-merge pull requests ({autoMergePullRequests.Count})");
+            Console.WriteLine($"Pull requests suitable for auto-merging ({autoMergePullRequests.Count}):");
             foreach (var pullRequest in autoMergePullRequests)
             {
                 Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
             }
+
+            var git = new Git.Project(GetGitPath(), false);
+            git.Init($"https://github.com/{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
+            git.Fetch();
+            git.ResetHard();
+            var baseBranchCommit = git.ParseRef(gitHubConfig["baseBranch"]);
+            var mergeBranchCommit = git.ParseRef(gitHubConfig["mergeBranch"]);
+            var mergeBranchTree = git.ParseRef($"{mergeBranchCommit}^{{tree}}");
+            git.CheckoutDetached(baseBranchCommit);
+            var baseBranchVersion = String.Format(gitHubConfig["versionFormat"] ?? "{0}", git.Describe(gitHubConfig["versionDescribeOptions"] ?? ""));
+            var mergeBranchParents = new List<string>();
+            mergeBranchParents.Add(mergeBranchCommit);
+            mergeBranchParents.Add(baseBranchCommit);
+            var autoMergePullRequestsSuccess = new List<GraphPullRequest>();
+            var autoMergePullRequestsFailure = new List<GraphPullRequest>();
+            foreach (var pullRequest in autoMergePullRequests)
+            {
+                var mergeCommit = git.ParseRef($"pull/{pullRequest.Number}/head");
+                try
+                {
+                    git.Merge(mergeCommit);
+                    mergeBranchParents.Add(mergeCommit);
+                    autoMergePullRequestsSuccess.Add(pullRequest);
+                }
+                catch (ApplicationException)
+                {
+                    autoMergePullRequestsFailure.Add(pullRequest);
+                    git.ResetHard();
+                }
+            }
+            var autoMergeCommit = git.ParseRef("HEAD");
+            var autoMergeTree = git.ParseRef($"{autoMergeCommit}^{{tree}}");
+
+            Console.WriteLine($"Pull requests successfully auto-merged ({autoMergePullRequestsSuccess.Count}):");
+            foreach (var pullRequest in autoMergePullRequestsSuccess)
+            {
+                Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
+            }
+
+            Console.WriteLine($"Pull requests not auto-merged ({autoMergePullRequestsFailure.Count}):");
+            foreach (var pullRequest in autoMergePullRequestsFailure)
+            {
+                Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
+            }
+
+            if (mergeBranchTree == autoMergeTree)
+            {
+                Console.WriteLine("No changes to push into merge branch");
+            }
+            else
+            {
+                var newMergeBranchMessage = String.Format(gitHubConfig["mergeMessageFormat"],
+                    baseBranchVersion,
+                    autoMergePullRequestsSuccess.Count,
+                    String.Join("", autoMergePullRequestsSuccess.Select(pr => String.Format(
+                        gitHubConfig["mergeMessagePRFormat"],
+                        pr.Number,
+                        pr.Title,
+                        git.GetAbbreviatedCommit($"pull/{pr.Number}/head")
+                    )))
+                );
+                var newMergeBranchCommit = git.CommitTree($"{autoMergeCommit}^{{tree}}", mergeBranchParents, newMergeBranchMessage);
+                git.SetBranchRef(gitHubConfig["mergeBranch"], newMergeBranchCommit);
+                git.Checkout(gitHubConfig["mergeBranch"]);
+                var newMergeBranchVersion = String.Format(
+                    gitHubConfig["mergeVersionFormat"] ?? gitHubConfig["versionFormat"] ?? "{0}",
+                    git.Describe(gitHubConfig["mergeVersionDescribeOptions"] ?? gitHubConfig["versionDescribeOptions"] ?? ""),
+                    git.GetCommitDate(newMergeBranchCommit)
+                );
+                Console.WriteLine("Pushed changes into merge branch:");
+                Console.WriteLine($"  Version: {newMergeBranchVersion}");
+                Console.WriteLine($"  Message: {newMergeBranchMessage.Split("\n")[0]}");
+            }
+        }
+
+        static string GetGitPath()
+        {
+            var appFilePath = System.Reflection.Assembly.GetEntryAssembly().Location;
+            return Path.Combine(Path.GetDirectoryName(appFilePath), "git");
         }
     }
 }
