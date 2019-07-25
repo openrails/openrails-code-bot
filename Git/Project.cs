@@ -34,6 +34,31 @@ namespace Open_Rails_Code_Bot.Git
             RunCommand("fetch --update-head-ok");
         }
 
+        public void Checkout(string reference)
+        {
+            RunCommand($"checkout --quiet {reference}");
+        }
+
+        public void CheckoutDetached(string reference)
+        {
+            RunCommand($"checkout --quiet --detach {reference}");
+        }
+
+        public void ResetHard()
+        {
+            RunCommand("reset --hard");
+        }
+
+        public void Merge(string reference)
+        {
+            RunCommand($"merge --no-edit --no-ff {reference}");
+        }
+
+        public void Push(string reference)
+        {
+            RunCommand($"push origin {reference}");
+        }
+
         public string ParseRef(string reference)
         {
             foreach (var line in GetCommandOutput($"rev-parse {reference}"))
@@ -89,26 +114,6 @@ namespace Open_Rails_Code_Bot.Git
                 }
             }
             throw new ApplicationException("Unable to describe commit");
-        }
-
-        public void Checkout(string reference)
-        {
-            RunCommand($"checkout --quiet {reference}");
-        }
-
-        public void CheckoutDetached(string reference)
-        {
-            RunCommand($"checkout --quiet --detach {reference}");
-        }
-
-        public void ResetHard()
-        {
-            RunCommand("reset --hard");
-        }
-
-        public void Merge(string reference)
-        {
-            RunCommand($"merge --no-edit --no-ff {reference}");
         }
 
         public void SetBranchRef(string branch, string reference)
