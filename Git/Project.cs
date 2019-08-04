@@ -86,17 +86,21 @@ namespace Open_Rails_Code_Bot.Git
             throw new ApplicationException("Unable to describe commit");
         }
 
-        public string CommitTree(string treeRef, IEnumerable<string> parentRefs, string message)
+        public string CommitTree(string authorName, string authorEmail, string treeRef, IEnumerable<string> parentRefs, string message)
         {
             var tempFile = Path.GetTempFileName();
             File.WriteAllText(tempFile, message);
             try {
+                Environment.SetEnvironmentVariable("GIT_AUTHOR_NAME", authorName);
+                Environment.SetEnvironmentVariable("GIT_AUTHOR_EMAIL", authorEmail);
+                Environment.SetEnvironmentVariable("GIT_COMMITTER_NAME", authorName);
+                Environment.SetEnvironmentVariable("GIT_COMMITTER_EMAIL", authorEmail);
                 var parents = String.Join(" ", parentRefs.Select(parentRef => $"-p {parentRef}"));
                 foreach (var line in GetCommandOutput($"commit-tree {treeRef} {parents} -F {tempFile}"))
                 {
                     return line;
                 }
-                throw new ApplicationException("Unable to describe commit");
+                throw new ApplicationException("Unable to commit tree");
             }
             finally
             {
@@ -113,7 +117,7 @@ namespace Open_Rails_Code_Bot.Git
                     return DateTimeOffset.FromUnixTimeSeconds(long.Parse(line.Split("> ")[1].Split(" ")[0]));
                 }
             }
-            throw new ApplicationException("Unable to describe commit");
+            throw new ApplicationException("Unable to get commit date");
         }
 
         public void SetBranchRef(string branch, string reference)
