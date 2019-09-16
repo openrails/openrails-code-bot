@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -43,6 +43,7 @@ namespace Open_Rails_Code_Bot
             var gitHubConfig = config.GetSection("github");
             var query = new Query(gitHubConfig["token"]);
 
+            Console.WriteLine($"Open Rails Code Bot started at {DateTimeOffset.Now:u}");
             Console.WriteLine($"GitHub organisation: {gitHubConfig["organization"]}");
             Console.WriteLine($"GitHub team:         {gitHubConfig["team"]}");
             Console.WriteLine($"GitHub repository:   {gitHubConfig["repository"]}");
@@ -97,6 +98,7 @@ namespace Open_Rails_Code_Bot
             var autoMergePullRequestsFailure = new List<GraphPullRequest>();
             foreach (var pullRequest in autoMergePullRequests)
             {
+                Console.WriteLine($"Merging #{pullRequest.Number} {pullRequest.Title}");
                 var mergeCommit = git.ParseRef($"pull/{pullRequest.Number}/head");
                 try
                 {
@@ -104,10 +106,11 @@ namespace Open_Rails_Code_Bot
                     mergeBranchParents.Add(mergeCommit);
                     autoMergePullRequestsSuccess.Add(pullRequest);
                 }
-                catch (ApplicationException)
+                catch (ApplicationException error)
                 {
                     autoMergePullRequestsFailure.Add(pullRequest);
                     git.ResetHard();
+                    Console.WriteLine($"Error: {error.Message}");
                 }
             }
             var autoMergeCommit = git.ParseRef("HEAD");
@@ -155,6 +158,7 @@ namespace Open_Rails_Code_Bot
                 Console.WriteLine($"  Version: {newMergeBranchVersion}");
                 Console.WriteLine($"  Message: {newMergeBranchMessage.Split("\n")[0]}");
             }
+            Console.WriteLine($"Open Rails Code Bot finished at {DateTimeOffset.Now:u}");
         }
 
         static string GetGitPath()
