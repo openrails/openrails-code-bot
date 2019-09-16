@@ -49,6 +49,11 @@ namespace Open_Rails_Code_Bot.Git
             RunCommand("reset --hard");
         }
 
+        public void Clean()
+        {
+            RunCommand("clean --force -d -x");
+        }
+
         public void Merge(string reference)
         {
             RunCommand($"merge --no-edit --no-ff {reference}");
