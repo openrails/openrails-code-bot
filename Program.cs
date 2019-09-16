@@ -86,6 +86,7 @@ namespace Open_Rails_Code_Bot
             git.Init($"https://github.com/{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
             git.Fetch();
             git.ResetHard();
+            git.Clean();
             var baseBranchCommit = git.ParseRef(gitHubConfig["baseBranch"]);
             var mergeBranchCommit = git.ParseRef(gitHubConfig["mergeBranch"]);
             var mergeBranchTree = git.ParseRef($"{mergeBranchCommit}^{{tree}}");
@@ -110,6 +111,7 @@ namespace Open_Rails_Code_Bot
                 {
                     autoMergePullRequestsFailure.Add(pullRequest);
                     git.ResetHard();
+                    git.Clean();
                     Console.WriteLine($"Error: {error.Message}");
                 }
             }
