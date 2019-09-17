@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -82,7 +82,8 @@ namespace Open_Rails_Code_Bot
                 Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
             }
 
-            var git = new Git.Project(GetGitPath(), false);
+            Console.WriteLine("Preparing repository...");
+            var git = new Git.Project(GetGitPath());
             git.Init($"https://github.com/{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
             git.Fetch();
             git.ResetHard();
@@ -99,7 +100,7 @@ namespace Open_Rails_Code_Bot
             var autoMergePullRequestsFailure = new List<GraphPullRequest>();
             foreach (var pullRequest in autoMergePullRequests)
             {
-                Console.WriteLine($"Merging #{pullRequest.Number} {pullRequest.Title}");
+                Console.WriteLine($"Merging #{pullRequest.Number} {pullRequest.Title}...");
                 var mergeCommit = git.ParseRef($"pull/{pullRequest.Number}/head");
                 try
                 {
@@ -112,7 +113,7 @@ namespace Open_Rails_Code_Bot
                     autoMergePullRequestsFailure.Add(pullRequest);
                     git.ResetHard();
                     git.Clean();
-                    Console.WriteLine($"Error: {error.Message}");
+                    Console.WriteLine($"  Error: {error.Message}");
                 }
             }
             var autoMergeCommit = git.ParseRef("HEAD");
@@ -137,6 +138,7 @@ namespace Open_Rails_Code_Bot
             }
             else
             {
+                Console.WriteLine("Creating merge commit...");
                 var newMergeBranchMessage = String.Format(gitHubConfig["mergeMessageFormat"],
                     baseBranchVersion,
                     autoMergePullRequestsSuccess.Count,

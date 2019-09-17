@@ -10,12 +10,10 @@ namespace Open_Rails_Code_Bot.Git
     public class Project
     {
         string GitPath;
-        bool Verbose;
 
-        public Project(string gitPath, bool verbose)
+        public Project(string gitPath)
         {
             GitPath = gitPath;
-            Verbose = verbose;
         }
 
         public void Init(string repository)
@@ -56,7 +54,7 @@ namespace Open_Rails_Code_Bot.Git
 
         public void Merge(string reference)
         {
-            RunCommand($"merge --no-edit --no-ff {reference}");
+            RunCommand($"merge --quiet --no-edit --no-ff {reference}");
         }
 
         public void Push(string reference)
@@ -132,39 +130,43 @@ namespace Open_Rails_Code_Bot.Git
 
         void RunCommand(string command)
         {
-            foreach (var line in GetCommandOutput(command))
+            foreach (var line in GetCommandOutput(command, true))
             {
             }
         }
 
-        IEnumerable<string> GetCommandOutput(string command)
+        IEnumerable<string> GetCommandOutput(string command, bool printOutput = false)
         {
             var args = $"--no-pager {command}";
-            if (Verbose)
+            if (printOutput)
+                Console.WriteLine($"  > git {args}");
+            var git = new Process();
+            git.StartInfo.WorkingDirectory = GitPath;
+            git.StartInfo.FileName = "git";
+            git.StartInfo.Arguments = args;
+            git.StartInfo.UseShellExecute = false;
+            git.StartInfo.RedirectStandardOutput = true;
+            git.StartInfo.RedirectStandardError = true;
+            git.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            git.StartInfo.StandardErrorEncoding = Encoding.UTF8;
+            git.ErrorDataReceived += (sender, e) =>
             {
-                Console.WriteLine("```shell");
-                Console.WriteLine($"{GitPath}> git {args}");
-            }
-            var git = Process.Start(new ProcessStartInfo()
-            {
-                WorkingDirectory = GitPath,
-                FileName = "git",
-                Arguments = args,
-                StandardOutputEncoding = Encoding.UTF8,
-                RedirectStandardOutput = true,
-            });
+                if (e.Data?.Length > 0)
+                    Console.Error.WriteLine($"  ! {e.Data}");
+            };
+            git.Start();
+            git.BeginErrorReadLine();
             while (!git.StandardOutput.EndOfStream)
             {
-                yield return git.StandardOutput.ReadLine();
+                if (printOutput)
+                    Console.WriteLine($"  < {git.StandardOutput.ReadLine()}");
+                else
+                    yield return git.StandardOutput.ReadLine();
             }
             git.WaitForExit();
             if (git.ExitCode != 0)
             {
                 throw new ApplicationException($"git {command} failed: {git.ExitCode}");
-            }
-            if (Verbose)
-            {
-                Console.WriteLine("```");
             }
         }
     }
