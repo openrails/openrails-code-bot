@@ -63,11 +63,11 @@ namespace Open_Rails_Code_Bot
             Console.WriteLine($"Open pull requests ({pullRequests.Count}):");
             foreach (var pullRequest in pullRequests)
             {
-                var autoMerge = memberLogins.Contains(pullRequest.Author.Login)
+                var autoMerge = memberLogins.Contains(pullRequest.Author?.Login)
                     && !pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["excludeLabel"]);
                 Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
-                Console.WriteLine($"    By:     {pullRequest.Author.Login}");
-                Console.WriteLine($"    Branch: {pullRequest.HeadRef.Name}");
+                Console.WriteLine($"    By:     {pullRequest.Author?.Login}");
+                Console.WriteLine($"    Branch: {pullRequest.HeadRef?.Name}");
                 Console.WriteLine($"    Labels: {String.Join(' ', pullRequest.Labels.Nodes.Select(label => label.Name))}");
                 Console.WriteLine($"    Allowed to auto-merge? {autoMerge}");
                 if (autoMerge)
