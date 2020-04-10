@@ -84,7 +84,7 @@ namespace Open_Rails_Code_Bot
 
             Console.WriteLine("Preparing repository...");
             var git = new Git.Project(GetGitPath());
-            git.Init($"https://github.com/{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
+            git.Init($"git@github.com:{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
             git.Fetch();
             git.ResetHard();
             git.Clean();
