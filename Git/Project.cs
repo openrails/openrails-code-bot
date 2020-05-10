@@ -93,7 +93,8 @@ namespace Open_Rails_Code_Bot.Git
         {
             var tempFile = Path.GetTempFileName();
             File.WriteAllText(tempFile, message);
-            try {
+            try
+            {
                 Environment.SetEnvironmentVariable("GIT_AUTHOR_NAME", authorName);
                 Environment.SetEnvironmentVariable("GIT_AUTHOR_EMAIL", authorEmail);
                 Environment.SetEnvironmentVariable("GIT_COMMITTER_NAME", authorName);
