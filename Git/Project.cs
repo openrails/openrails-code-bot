@@ -54,7 +54,7 @@ namespace Open_Rails_Code_Bot.Git
 
         public void Merge(string reference)
         {
-            RunCommand($"merge --quiet --no-edit --no-ff {reference}");
+            RunCommand($"merge --quiet --no-edit --no-ff -Xignore-space-change {reference}");
         }
 
         public void Push(string reference)
