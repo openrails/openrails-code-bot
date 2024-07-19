@@ -73,6 +73,7 @@ namespace Open_Rails_Code_Bot.GitHub
                                     prefix
                                     name
                                 }
+                                isDraft
                                 labels(first: 100) {
                                     nodes {
                                         name

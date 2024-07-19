@@ -63,12 +63,14 @@ namespace Open_Rails_Code_Bot
             Console.WriteLine($"Open pull requests ({pullRequests.Count}):");
             foreach (var pullRequest in pullRequests)
             {
-                var autoMerge =
-                    (memberLogins.Contains(pullRequest.Author?.Login) && !pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["excludeLabel"]))
-                    || pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["includeLabel"]);
+                var isMember = memberLogins.Contains(pullRequest.Author?.Login);
+                var isIncluded = pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["includeLabel"]);
+                var isExcluded = pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["excludeLabel"]);
+                var autoMerge = (isMember && !isExcluded) || isIncluded;
                 Console.WriteLine($"  #{pullRequest.Number} {pullRequest.Title}");
                 Console.WriteLine($"    By:     {pullRequest.Author?.Login}");
                 Console.WriteLine($"    Branch: {pullRequest.HeadRef?.Name}");
+                Console.WriteLine($"    Draft:  {pullRequest.IsDraft}");
                 Console.WriteLine($"    Labels: {String.Join(' ', pullRequest.Labels.Nodes.Select(label => label.Name))}");
                 Console.WriteLine($"    Allowed to auto-merge? {autoMerge}");
                 if (autoMerge)
@@ -76,6 +78,13 @@ namespace Open_Rails_Code_Bot
                     autoMergePullRequests.Add(pullRequest);
                 }
             }
+
+            // Sort pull requests by draft status (non-draft first), inclusion label (present first), and number
+            autoMergePullRequests = autoMergePullRequests.OrderBy(pullRequest =>
+            {
+                var isIncluded = pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["includeLabel"]);
+                return $"{(pullRequest.IsDraft ? "2" : "1")}{(isIncluded ? "1" : "2")}{pullRequest.Number,10}";
+            }).ToList();
 
             Console.WriteLine($"Pull requests suitable for auto-merging ({autoMergePullRequests.Count}):");
             foreach (var pullRequest in autoMergePullRequests)

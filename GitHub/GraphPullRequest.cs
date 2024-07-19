@@ -10,6 +10,7 @@ namespace Open_Rails_Code_Bot.GitHub
         public DateTimeOffset CreatedAt;
         public GraphPullRequestAuthor Author;
         public GraphPullRequestRef HeadRef;
+        public bool IsDraft;
         public GraphPullRequestLabels Labels;
     }
 
