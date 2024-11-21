@@ -9,7 +9,7 @@ namespace Open_Rails_Code_Bot.Git
 {
     public class Project
     {
-        string GitPath;
+        readonly string GitPath;
 
         public Project(string gitPath)
         {
