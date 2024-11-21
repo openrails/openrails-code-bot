@@ -50,6 +50,16 @@ namespace Open_Rails_Code_Bot.Git
             RunCommand("clean --force -d -x");
         }
 
+        public void DiffStat(string reference1, string reference2)
+        {
+            foreach (var line in GetCommandOutput($"diff --numstat {reference1}...{reference2}"))
+            {
+                var parts = line.Split('\t');
+                if (parts.Length == 3 && int.TryParse(parts[0], out var added) && int.TryParse(parts[1], out var deleted))
+                    Console.WriteLine("  {2} {0:+#,##0} {1:-#,##0}", added, deleted, parts[2]);
+            }
+        }
+
         public void Merge(string reference)
         {
             RunCommand($"merge --quiet --no-edit --no-ff -Xignore-space-change {reference}");

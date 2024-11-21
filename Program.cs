@@ -113,6 +113,7 @@ namespace Open_Rails_Code_Bot
             foreach (var pullRequest in autoMergePullRequests)
             {
                 Console.WriteLine($"Merging #{pullRequest.Number} {pullRequest.Title}...");
+                git.DiffStat(baseBranchCommit, $"pull/{pullRequest.Number}/head");
                 var mergeCommit = git.ParseRef($"pull/{pullRequest.Number}/head");
                 try
                 {
