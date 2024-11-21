@@ -129,45 +129,43 @@ namespace Open_Rails_Code_Bot.Git
             RunCommand($"branch -f {branch} {reference}");
         }
 
-        void RunCommand(string command)
+        void RunCommand(string arguments)
         {
-            foreach (var line in GetCommandOutput(command, true))
+            foreach (var line in GetCommandOutput(arguments, true))
             {
             }
         }
 
-        IEnumerable<string> GetCommandOutput(string command, bool printOutput = false)
+        IEnumerable<string> GetCommandOutput(string arguments, bool printOutput = false)
         {
-            var args = $"--no-pager {command}";
+            arguments = $"--no-pager {arguments}";
             if (printOutput)
-                Console.WriteLine($"  > git {args}");
+                Console.WriteLine($"  > git {arguments}");
+            var lines = new List<string>();
             var git = new Process();
             git.StartInfo.WorkingDirectory = GitPath;
             git.StartInfo.FileName = "git";
-            git.StartInfo.Arguments = args;
+            git.StartInfo.Arguments = arguments;
             git.StartInfo.UseShellExecute = false;
             git.StartInfo.RedirectStandardOutput = true;
             git.StartInfo.RedirectStandardError = true;
             git.StartInfo.StandardOutputEncoding = Encoding.UTF8;
             git.StartInfo.StandardErrorEncoding = Encoding.UTF8;
-            git.ErrorDataReceived += (sender, e) =>
-            {
-                if (e.Data?.Length > 0)
-                    Console.Error.WriteLine($"  ! {e.Data}");
-            };
+            git.OutputDataReceived += (sender, e) => lines.Add($"  < {e.Data}");
+            git.ErrorDataReceived += (sender, e) => lines.Add($"  ! {e.Data}");
             git.Start();
+            git.BeginOutputReadLine();
             git.BeginErrorReadLine();
-            while (!git.StandardOutput.EndOfStream)
-            {
-                if (printOutput)
-                    Console.WriteLine($"  < {git.StandardOutput.ReadLine()}");
-                else
-                    yield return git.StandardOutput.ReadLine();
-            }
             git.WaitForExit();
+            foreach (var line in lines)
+            {
+                if (printOutput && line.Length > 4)
+                    Console.WriteLine(line);
+                yield return line[4..];
+            }
             if (git.ExitCode != 0)
             {
-                throw new ApplicationException($"git {command} failed: {git.ExitCode}");
+                throw new ApplicationException($"git {arguments} failed: {git.ExitCode}");
             }
         }
     }
