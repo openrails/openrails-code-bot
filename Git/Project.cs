@@ -18,13 +18,11 @@ namespace Open_Rails_Code_Bot.Git
 
         public void Init(string repository)
         {
-            if (!Directory.Exists(GitPath))
-            {
-                Directory.CreateDirectory(GitPath);
-                RunCommand($"init");
-                RunCommand($"remote add origin {repository}");
-                RunCommand($"config remote.origin.fetch +refs/*:refs/*");
-            }
+            if (!Directory.Exists(GitPath)) Directory.CreateDirectory(GitPath);
+            if (!File.Exists(Path.Join(GitPath, ".git", "config"))) RunCommand($"init");
+
+            RunCommand($"config remove-section remote.origin");
+            RunCommand($"remote add origin --mirror=fetch {repository}");
         }
 
         public void Fetch()
