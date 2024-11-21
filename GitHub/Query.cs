@@ -14,7 +14,7 @@ namespace Open_Rails_Code_Bot.GitHub
 
         readonly string Token;
 
-        HttpClient Client = new HttpClient();
+        readonly HttpClient Client = new();
 
         public Query(string token)
         {

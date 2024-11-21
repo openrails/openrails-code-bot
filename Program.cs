@@ -103,14 +103,17 @@ namespace Open_Rails_Code_Bot
             var mergeBranchTree = git.ParseRef($"{mergeBranchCommit}^{{tree}}");
             git.CheckoutDetached(baseBranchCommit);
             var baseBranchVersion = String.Format(gitHubConfig["versionFormat"] ?? "{0}", git.Describe(gitHubConfig["versionDescribeOptions"] ?? ""));
-            var mergeBranchParents = new List<string>();
-            mergeBranchParents.Add(mergeBranchCommit);
-            mergeBranchParents.Add(baseBranchCommit);
+            var mergeBranchParents = new List<string>
+            {
+                mergeBranchCommit,
+                baseBranchCommit
+            };
             var autoMergePullRequestsSuccess = new List<GraphPullRequest>();
             var autoMergePullRequestsFailure = new List<GraphPullRequest>();
             foreach (var pullRequest in autoMergePullRequests)
             {
                 Console.WriteLine($"Merging #{pullRequest.Number} {pullRequest.Title}...");
+                git.DiffStat(baseBranchCommit, $"pull/{pullRequest.Number}/head");
                 var mergeCommit = git.ParseRef($"pull/{pullRequest.Number}/head");
                 try
                 {

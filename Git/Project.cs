@@ -9,7 +9,7 @@ namespace Open_Rails_Code_Bot.Git
 {
     public class Project
     {
-        string GitPath;
+        readonly string GitPath;
 
         public Project(string gitPath)
         {
@@ -18,13 +18,11 @@ namespace Open_Rails_Code_Bot.Git
 
         public void Init(string repository)
         {
-            if (!Directory.Exists(GitPath))
-            {
-                Directory.CreateDirectory(GitPath);
-                RunCommand($"init");
-                RunCommand($"remote add origin {repository}");
-                RunCommand($"config remote.origin.fetch +refs/*:refs/*");
-            }
+            if (!Directory.Exists(GitPath)) Directory.CreateDirectory(GitPath);
+            if (!File.Exists(Path.Join(GitPath, ".git", "config"))) RunCommand($"init");
+
+            RunCommand($"config remove-section remote.origin");
+            RunCommand($"remote add origin --mirror=fetch {repository}");
         }
 
         public void Fetch()
@@ -50,6 +48,16 @@ namespace Open_Rails_Code_Bot.Git
         public void Clean()
         {
             RunCommand("clean --force -d -x");
+        }
+
+        public void DiffStat(string reference1, string reference2)
+        {
+            foreach (var line in GetCommandOutput($"diff --numstat {reference1}...{reference2}"))
+            {
+                var parts = line.Split('\t');
+                if (parts.Length == 3 && int.TryParse(parts[0], out var added) && int.TryParse(parts[1], out var deleted))
+                    Console.WriteLine("  {2} {0:+#,##0} {1:-#,##0}", added, deleted, parts[2]);
+            }
         }
 
         public void Merge(string reference)
@@ -129,45 +137,43 @@ namespace Open_Rails_Code_Bot.Git
             RunCommand($"branch -f {branch} {reference}");
         }
 
-        void RunCommand(string command)
+        void RunCommand(string arguments)
         {
-            foreach (var line in GetCommandOutput(command, true))
+            foreach (var line in GetCommandOutput(arguments, true))
             {
             }
         }
 
-        IEnumerable<string> GetCommandOutput(string command, bool printOutput = false)
+        IEnumerable<string> GetCommandOutput(string arguments, bool printOutput = false)
         {
-            var args = $"--no-pager {command}";
+            arguments = $"--no-pager {arguments}";
             if (printOutput)
-                Console.WriteLine($"  > git {args}");
+                Console.WriteLine($"  > git {arguments}");
+            var lines = new List<string>();
             var git = new Process();
             git.StartInfo.WorkingDirectory = GitPath;
             git.StartInfo.FileName = "git";
-            git.StartInfo.Arguments = args;
+            git.StartInfo.Arguments = arguments;
             git.StartInfo.UseShellExecute = false;
             git.StartInfo.RedirectStandardOutput = true;
             git.StartInfo.RedirectStandardError = true;
             git.StartInfo.StandardOutputEncoding = Encoding.UTF8;
             git.StartInfo.StandardErrorEncoding = Encoding.UTF8;
-            git.ErrorDataReceived += (sender, e) =>
-            {
-                if (e.Data?.Length > 0)
-                    Console.Error.WriteLine($"  ! {e.Data}");
-            };
+            git.OutputDataReceived += (sender, e) => lines.Add($"  < {e.Data}");
+            git.ErrorDataReceived += (sender, e) => lines.Add($"  ! {e.Data}");
             git.Start();
+            git.BeginOutputReadLine();
             git.BeginErrorReadLine();
-            while (!git.StandardOutput.EndOfStream)
-            {
-                if (printOutput)
-                    Console.WriteLine($"  < {git.StandardOutput.ReadLine()}");
-                else
-                    yield return git.StandardOutput.ReadLine();
-            }
             git.WaitForExit();
+            foreach (var line in lines)
+            {
+                if (printOutput && line.Length > 4)
+                    Console.WriteLine(line);
+                yield return line[4..];
+            }
             if (git.ExitCode != 0)
             {
-                throw new ApplicationException($"git {command} failed: {git.ExitCode}");
+                throw new ApplicationException($"git {arguments} failed: {git.ExitCode}");
             }
         }
     }
