@@ -21,7 +21,7 @@ namespace Open_Rails_Code_Bot.Git
             if (!Directory.Exists(GitPath)) Directory.CreateDirectory(GitPath);
             if (!File.Exists(Path.Join(GitPath, ".git", "config"))) RunCommand($"init");
 
-            RunCommand($"config remove-section remote.origin");
+            RunCommandIgnoreErrors($"config remove-section remote.origin");
             RunCommand($"remote add origin --mirror=fetch {repository}");
         }
 
@@ -135,6 +135,18 @@ namespace Open_Rails_Code_Bot.Git
         public void SetBranchRef(string branch, string reference)
         {
             RunCommand($"branch -f {branch} {reference}");
+        }
+
+        void RunCommandIgnoreErrors(string arguments)
+        {
+            try
+            {
+                RunCommand(arguments);
+            }
+            catch (ApplicationException)
+            {
+                // We are deliberately ignoring errors; RunCommand will have already printed them
+            }
         }
 
         void RunCommand(string arguments)
