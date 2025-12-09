@@ -94,7 +94,7 @@ namespace Open_Rails_Code_Bot
 
             Console.WriteLine("Preparing repository...");
             var git = new Git.Project(GetGitPath());
-            git.Init($"git@github.com:{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git");
+            git.Init($"git@github.com:{gitHubConfig["organization"]}/{gitHubConfig["repository"]}.git", gitHubConfig["mergeAuthorName"], gitHubConfig["mergeAuthorEmail"]);
             git.Fetch();
             git.ResetHard();
             git.Clean();
@@ -162,7 +162,7 @@ namespace Open_Rails_Code_Bot
                         git.GetAbbreviatedCommit($"pull/{pr.Number}/head")
                     )))
                 );
-                var newMergeBranchCommit = git.CommitTree(gitHubConfig["mergeAuthorName"], gitHubConfig["mergeAuthorEmail"], $"{autoMergeCommit}^{{tree}}", mergeBranchParents, newMergeBranchMessage);
+                var newMergeBranchCommit = git.CommitTree($"{autoMergeCommit}^{{tree}}", mergeBranchParents, newMergeBranchMessage);
                 git.SetBranchRef(gitHubConfig["mergeBranch"], newMergeBranchCommit);
                 git.Checkout(gitHubConfig["mergeBranch"]);
                 var newMergeBranchVersion = String.Format(
