@@ -86,11 +86,11 @@ namespace Open_Rails_Code_Bot
                 return $"{(pullRequest.IsDraft ? "2" : "1")}{(isIncluded ? "1" : "2")}{pullRequest.Number,10}";
             }).ToList();
 
-            Console.WriteLine($"Pull requests suitable for auto-merging ({autoMergePullRequests.Count}) [(i) = {gitHubConfig["includeLabel"]}, (d) = draft]:");
+            Console.WriteLine($"Pull requests suitable for auto-merging ({autoMergePullRequests.Count}) [(d) = draft, (i) = {gitHubConfig["includeLabel"]}]:");
             foreach (var pullRequest in autoMergePullRequests)
             {
                 var isIncluded = pullRequest.Labels.Nodes.Any(label => label.Name == gitHubConfig["includeLabel"]);
-                Console.WriteLine($"  {(isIncluded ? "(i)" : "   ")} {(pullRequest.IsDraft ? "(d)" : "   ")} #{pullRequest.Number} {pullRequest.Title}");
+                Console.WriteLine($"  {(pullRequest.IsDraft ? "(d)" : "   ")} {(isIncluded ? "(i)" : "   ")} #{pullRequest.Number} {pullRequest.Title}");
             }
 
             Console.WriteLine("Preparing repository...");
